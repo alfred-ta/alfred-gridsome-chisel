@@ -5,6 +5,10 @@
   "main": "index.js",
   "author": "Alfred Takala",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/alfredtakala/alfred-gridsome-chisel",
+    "type": "git"
+  },
   "dependencies": {
     "camelcase": "^6.2.0",
     "parse": "^2.19.0"

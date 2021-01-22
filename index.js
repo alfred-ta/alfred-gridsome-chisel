@@ -20,7 +20,7 @@ class ChiselSource {
   constructor (api, options) {
     this.options = options
     this.typesIndex = {}
-    this.modelsArary = [];
+    this.modelsArray = [];
 
     Parse.initialize(options.appId, null, options.masterKey);
     Parse.serverURL = options.serverURL;
@@ -42,12 +42,11 @@ class ChiselSource {
     
     modelQuery.equalTo('site', new SiteModel({id: this.options.siteId}));
     const models = await modelQuery.find();
-    this.modelsArary = await Promise.all(
+    this.modelsArray = await Promise.all(
       models.map(async modelRecord => {
         // model meta info and register
         const name = modelRecord.get('nameId');
         const typeName = this.createTypeName(name)
-        const route = {}; // TODO, second parameter from options.routes[name] ?
         actions.addCollection(typeName);
 
         // Prepare model fields
@@ -79,7 +78,7 @@ class ChiselSource {
   }
 
   async getEntries (actions) {
-    for (const model of this.modelsArary) {
+    for (const model of this.modelsArray) {
       const { name, typeName, tableName, displayName, id, fields } = model;
       const collection = actions.getCollection(typeName);
       const query = new Parse.Query(tableName);
