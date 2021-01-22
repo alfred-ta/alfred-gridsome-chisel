@@ -1,0 +1,12 @@
+{
+  "name": "@gridsome/source-alfred-chisel",
+  "version": "1.0.0",
+  "description": "Integrate gridsome with Chisel CMS",
+  "main": "index.js",
+  "author": "Alfred Takala",
+  "license": "MIT",
+  "dependencies": {
+    "camelcase": "^6.2.0",
+    "parse": "^2.19.0"
+  }
+}
