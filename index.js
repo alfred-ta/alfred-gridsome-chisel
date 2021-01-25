@@ -36,6 +36,7 @@ class ChiselSource {
   }
 
   async getMediaItems (actions) {
+    console.log("passed me, getMediaItems");
     const MediaItemModel = Parse.Object.extend(MEDIA_ITEM_MODEL_NAME);
     const SiteModel = Parse.Object.extend(SITE_MODEL_NAME);
     const mediaItemQuery = new Parse.Query(MediaItemModel);
@@ -58,7 +59,6 @@ class ChiselSource {
 
   async getContentTypes (actions) {
     const ModelModel = Parse.Object.extend(MODEL_MODEL_NAME);
-    const ModelFieldModel = Parse.Object.extend(MODEL_FIELD_MODEL_NAME);
     const SiteModel = Parse.Object.extend(SITE_MODEL_NAME);
 
     const modelQuery = new Parse.Query(ModelModel);
@@ -72,21 +72,7 @@ class ChiselSource {
         const typeName = this.createTypeName(name)
         actions.addCollection(typeName);
 
-        // Prepare model fields
-        const modelFieldQuery = new Parse.Query(ModelFieldModel);
-        modelFieldQuery.equalTo('model', modelRecord);
-        modelFieldQuery.equalTo('isDisabled', false);
-        const modelFields = await modelFieldQuery.find();
-        let displayFieldName = modelFields[0].get('name');
-        const fields = modelFields.map(modelFieldRecord => {
-          if (modelFieldRecord.get('isRequired')) displayFieldName = modelFieldRecord.get('nameId');
-          return {
-            nameId: modelFieldRecord.get('nameId'),
-            name: modelFieldRecord.get('name'),
-            isList: modelFieldRecord.get('isList'),
-            type: modelFieldRecord.get('type')
-          }
-        });
+        const { fields, displayFieldName } = await this.prepareModelFields(modelRecord);
 
         console.log("type name", typeName);
         return {
@@ -103,6 +89,7 @@ class ChiselSource {
   }
 
   async getEntries (actions) {
+    console.log("this modelsArray", this.modelsArray);
     for (const model of this.modelsArray) {
       const { name, typeName, tableName, displayName, id, fields } = model;
       const collection = actions.getCollection(typeName);
@@ -127,6 +114,7 @@ class ChiselSource {
             } else 
               node[field.nameId] = null;
           } else if (field.type === 'Reference') {
+            console.log("value.classname", field.type);
             node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
           } else if (field.type === 'Media') {
             node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
@@ -142,6 +130,29 @@ class ChiselSource {
     return camelCase(`${this.options.typeName} ${name}`, { pascalCase: true })
   }
 
+
+  // Prepare model fields, called from getContentTypes
+  async prepareModelFields (modelRecord) {
+    const ModelFieldModel = Parse.Object.extend(MODEL_FIELD_MODEL_NAME);
+    const modelFieldQuery = new Parse.Query(ModelFieldModel);
+    modelFieldQuery.equalTo('model', modelRecord);
+    modelFieldQuery.equalTo('isDisabled', false);
+    const modelFields = await modelFieldQuery.find();
+    let displayFieldName = modelFields[0].get('name');
+
+    const fields = modelFields.map(modelFieldRecord => {
+      if (modelFieldRecord.get('isRequired')) displayFieldName = modelFieldRecord.get('nameId');
+      if (modelFieldRecord.get('type') === 'Reference') console.log("reference", JSON.stringify(modelFieldRecord));
+      return {
+        nameId: modelFieldRecord.get('nameId'),
+        name: modelFieldRecord.get('name'),
+        isList: modelFieldRecord.get('isList'),
+        type: modelFieldRecord.get('type')
+      }
+    });
+
+    return { fields, displayFieldName };
+  }
 }
 
 module.exports = ChiselSource
