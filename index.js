@@ -36,7 +36,6 @@ class ChiselSource {
   }
 
   async getMediaItems (actions) {
-    console.log("passed me, getMediaItems");
     const MediaItemModel = Parse.Object.extend(MEDIA_ITEM_MODEL_NAME);
     const SiteModel = Parse.Object.extend(SITE_MODEL_NAME);
     const mediaItemQuery = new Parse.Query(MediaItemModel);
@@ -74,7 +73,6 @@ class ChiselSource {
 
         const { fields, displayFieldName } = await this.prepareModelFields(modelRecord);
 
-        console.log("type name", typeName);
         return {
           name,
           typeName,
@@ -89,7 +87,6 @@ class ChiselSource {
   }
 
   async getEntries (actions) {
-    console.log("this modelsArray", this.modelsArray);
     for (const model of this.modelsArray) {
       const { name, typeName, tableName, displayName, id, fields } = model;
       const collection = actions.getCollection(typeName);
@@ -109,11 +106,16 @@ class ChiselSource {
           if (value) {
             if (field.isList) {
               node[field.nameId] = value.map(item => {
-                if (field.type === 'Reference' && item) {
-                  console.log("inside reference list", item);               
-                  const typeName = this.getTypeNameFromTableName(item.className);
-                  return typeName ? actions.createReference(typeName, item.id) : '';
-                } 
+                if (item) {
+                  if (field.type === 'Reference') {
+                    const typeName = this.getTypeNameFromTableName(item.className);
+                    return typeName ? actions.createReference(typeName, item.id) : '';
+                  } 
+                  if (field.type === 'Media') {
+                    return typeName ? actions.createReference(this.createTypeName(MEDIA_ITEM_MODEL_NAME), item.id) : '';
+                  }
+                  return item;
+                }
                 return null;
               });
             } else if (field.type === 'Reference') {
@@ -121,11 +123,8 @@ class ChiselSource {
                 const typeName = this.getTypeNameFromTableName(atom.className);
                 return typeName ? actions.createReference(typeName, atom.id) : '';
               })
-              /* const typeName = this.getTypeNameFromTableName(value.tableName);
-              console.log("reference typeName", value, typeName)
-              node[field.nameId] =  typeName ? actions.createReference(typeName, item.id) : '';*/
             } else if (field.type === 'Media') {
-              // node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
+              node[field.nameId] = value ? actions.createReference(this.createTypeName(value.className), value.id) : null;
             } else
               node[field.nameId] = value;
           } else
@@ -138,10 +137,6 @@ class ChiselSource {
 
   createTypeName (name = '') {
     return camelCase(`${this.options.typeName} ${name}`, { pascalCase: true })
-  }
-
-  toReferencesArray (value) {
-    
   }
 
   getTypeNameFromTableName (tableName) {
