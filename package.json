@@ -1,16 +1,30 @@
 {
-  "name": "@gridsome/source-alfred-chisel",
+  "name": "@gridsome/source-chisel",
   "version": "1.0.0",
   "description": "Integrate gridsome with Chisel CMS",
   "main": "index.js",
   "author": "Alfred Takala",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/alfredtakala/alfred-gridsome-chisel",
+    "url": "git+https://github.com/alfredtakala/alfred-gridsome-chisel.git",
     "type": "git"
   },
   "dependencies": {
     "camelcase": "^6.2.0",
     "parse": "^2.19.0"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/alfredtakala/alfred-gridsome-chisel/issues"
+  },
+  "homepage": "https://github.com/alfredtakala/alfred-gridsome-chisel#readme",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "gridsome-plugin"
+  ]
 }

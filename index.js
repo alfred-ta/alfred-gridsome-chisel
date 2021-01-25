@@ -1,9 +1,10 @@
 const camelCase = require('camelcase')
 const Parse = require('parse/node');
 
+const SITE_MODEL_NAME = 'Site';
 const MODEL_MODEL_NAME = 'Model';
 const MODEL_FIELD_MODEL_NAME = 'ModelField';
-const SITE_MODEL_NAME = 'Site';
+const MEDIA_ITEM_MODEL_NAME = 'MediaItem';
 
 class ChiselSource {
   static defaultOptions () {
@@ -29,8 +30,30 @@ class ChiselSource {
 
     api.loadSource(async store => {
       await this.getContentTypes(store)
+      await this.getMediaItems(store)
       await this.getEntries(store)
     })
+  }
+
+  async getMediaItems (actions) {
+    const MediaItemModel = Parse.Object.extend(MEDIA_ITEM_MODEL_NAME);
+    const SiteModel = Parse.Object.extend(SITE_MODEL_NAME);
+    const mediaItemQuery = new Parse.Query(MediaItemModel);
+    mediaItemQuery.equalTo('site', new SiteModel({ id: this.options.siteId }));
+    const typeName = this.createTypeName('MediaItem')
+    const collection = actions.addCollection(typeName);
+
+    const mediaItems = await mediaItemQuery.find();
+    for (const mediaItem of mediaItems) {
+      const node = {
+        id: mediaItem.id,
+        title: mediaItem.get('name'),
+        type: mediaItem.get('type'),
+        file: mediaItem.get('file')
+      }
+      collection.addNode(node);
+    }
+
   }
 
   async getContentTypes (actions) {
@@ -59,7 +82,9 @@ class ChiselSource {
           if (modelFieldRecord.get('isRequired')) displayFieldName = modelFieldRecord.get('nameId');
           return {
             nameId: modelFieldRecord.get('nameId'),
-            name: modelFieldRecord.get('name')
+            name: modelFieldRecord.get('name'),
+            isList: modelFieldRecord.get('isList'),
+            type: modelFieldRecord.get('type')
           }
         });
 
@@ -92,9 +117,22 @@ class ChiselSource {
         node.createdAt = entry.get('createdAt');
         node.updatedAt = entry.get('updatedAt');
         for (const field of fields) {
-          node[field.nameId] = entry.get(field.nameId);
+          const key = field.nameId;
+          const value = entry.get(key);
+          if (field.isList) {
+            if (value) {
+              node[field.nameId] = value.map(item => 
+                (field.type === 'Reference' && item) ? actions.createReference(item.className, item.id) : item
+              );
+            } else 
+              node[field.nameId] = null;
+          } else if (field.type === 'Reference') {
+            node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
+          } else if (field.type === 'Media') {
+            node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
+          }
+          node[field.nameId] = value;
         }
-        console.log("node", typeName, node);
         collection.addNode(node);
       }
     }
