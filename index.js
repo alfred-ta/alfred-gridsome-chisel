@@ -106,20 +106,30 @@ class ChiselSource {
         for (const field of fields) {
           const key = field.nameId;
           const value = entry.get(key);
-          if (field.isList) {
-            if (value) {
-              node[field.nameId] = value.map(item => 
-                (field.type === 'Reference' && item) ? actions.createReference(item.className, item.id) : item
-              );
-            } else 
-              node[field.nameId] = null;
-          } else if (field.type === 'Reference') {
-            console.log("value.classname", field.type);
-            node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
-          } else if (field.type === 'Media') {
-            node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
-          }
-          node[field.nameId] = value;
+          if (value) {
+            if (field.isList) {
+              node[field.nameId] = value.map(item => {
+                if (field.type === 'Reference' && item) {
+                  console.log("inside reference list", item);               
+                  const typeName = this.getTypeNameFromTableName(item.className);
+                  return typeName ? actions.createReference(typeName, item.id) : '';
+                } 
+                return null;
+              });
+            } else if (field.type === 'Reference') {
+              node[field.nameId] = value.map(atom => {
+                const typeName = this.getTypeNameFromTableName(atom.className);
+                return typeName ? actions.createReference(typeName, atom.id) : '';
+              })
+              /* const typeName = this.getTypeNameFromTableName(value.tableName);
+              console.log("reference typeName", value, typeName)
+              node[field.nameId] =  typeName ? actions.createReference(typeName, item.id) : '';*/
+            } else if (field.type === 'Media') {
+              // node[field.nameId] = value ? actions.createReference(value.className, value.id) : null;
+            } else
+              node[field.nameId] = value;
+          } else
+            node[field.nameId] = null;
         }
         collection.addNode(node);
       }
@@ -130,7 +140,14 @@ class ChiselSource {
     return camelCase(`${this.options.typeName} ${name}`, { pascalCase: true })
   }
 
+  toReferencesArray (value) {
+    
+  }
 
+  getTypeNameFromTableName (tableName) {
+    const modelRecord = this.modelsArray.find(model => model.tableName === tableName);
+    return modelRecord ? modelRecord.typeName : null;
+  }
   // Prepare model fields, called from getContentTypes
   async prepareModelFields (modelRecord) {
     const ModelFieldModel = Parse.Object.extend(MODEL_FIELD_MODEL_NAME);
